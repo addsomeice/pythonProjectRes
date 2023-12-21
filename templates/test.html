@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>city infomation</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var currentPage = 1;  // 当前页数
+
+            function getData(city, page) {
+                $.ajax({
+                    url: '/data/closest_cities',
+                    type: 'GET',
+                    data: {city: city, page: page},
+                    success: function(response) {
+                        // 在前端处理返回的数据
+                        var dataContainer = $('#data-container');
+                        dataContainer.empty();  // 清空容器
+
+                        // 添加数据到容器
+                        for (var i = 0; i < response.data.length; i++) {
+                            dataContainer.append('<div>' + response.data[i].queryCity+ response.data[i].city+ response.data[i].distance+'</div>');
+                        }
+                    },
+                    error: function(error) {
+                        console.log('error: ', error);
+                    }
+                });
+            }
+
+            // 处理提交按钮点击事件
+            $('#submit-btn').click(function() {
+                var city = $('#city-input').val();
+                currentPage = 1;  // 重置当前页数
+                getData(city, currentPage);
+            });
+
+            // 处理上一页按钮点击事件
+            $('#prev-btn').click(function() {
+                if (currentPage > 1) {
+                    currentPage--;
+                    var city = $('#city-input').val();
+                    getData(city, currentPage);
+                }
+            });
+
+            // 处理下一页按钮点击事件
+            $('#next-btn').click(function() {
+                currentPage++;
+                var city = $('#city-input').val();
+                getData(city, currentPage);
+            });
+        });
+    </script>
+</head>
+<body>
+    <label for="city-input">input city name：</label>
+    <input type="text" id="city-input">
+
+    <button id="submit-btn">submit</button>
+
+    <!-- 显示城市信息的区域 -->
+    <div id="data-container">
+        <!-- 数据会动态填充到这里 -->
+    </div>
+
+    <!-- 分页按钮 -->
+    <button id="prev-btn">last page</button>
+    <button id="next-btn">next page</button>
+</body>
+</html>

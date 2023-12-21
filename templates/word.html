@@ -1,0 +1,168 @@
+<html>
+    <head>
+        <title>Tutorial of Building a Simple Web Application</title>
+        <script src="https://code.jquery.com/jquery-3.7.1.js" 
+                integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4=" 
+                crossorigin="anonymous"></script>
+    </head>
+    <body>
+    <div style="display: flex;">
+    <div style="flex: 1;min-width: 300px;">
+        <div class="Liu">
+            <h2>Liu shuaitong 76015</h2>
+        </div>
+        <div class="picture1">
+            <img src="/static/liushuaitong.jpg" width="200" height="200"/>
+        </div>
+        <div class="Liu">
+            <h2>Zhang sixuan 76019</h2>
+        </div>
+        <div class="picture1">
+            <img src="/static/zhangsixuan.jpg" width="200" height="200"/>
+        </div>
+    </div>
+    <div style="flex: 4;">
+        <div style="display: flex; margin-top: 20px;">
+        <span style="margin-right: 10px; margin-top: 7px;">Popular Words:</span>
+                <input id="city" placeholder="city" class="addInput"/>
+                <input id="limit" placeholder="limit" class="addInput" style="margin-left: 5px"/>
+                <button id="btnPopular" class="button2" onclick="getPopularWord1()">Search</button>
+    </div>
+
+
+        <!-- Response -->
+<div class="response" id="response">
+  <table id="wordTable" style="display: none;">
+    <thead style="background-color: blue; color: white;">
+      <tr>
+        <th>Term</th>
+        <th>Popularity</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+<div class="response" id="response">
+  <pre id="affectedReviews" style="font-weight: bold; font-size: xx-large;"></pre>
+</div>
+</div>
+</div>
+</body>
+    <script>
+         function getPopularWord1() {
+            const city = document.getElementById('city').value;
+            const limit = document.getElementById('limit').value;
+
+            fetch(`/popular_words1?city=${city}&limit=${limit}`)
+              .then(response => response.json())
+              .then(data => {
+                const table = document.getElementById('wordTable');
+                const tableBody = table.querySelector('tbody');
+                tableBody.innerHTML = ''; // 清空表格内容
+
+                data.forEach(item => {
+                  const row = document.createElement('tr');
+                  const termCell = document.createElement('td');
+                  termCell.textContent = item.term;
+                  const popularityCell = document.createElement('td');
+                  popularityCell.textContent = item.popularity;
+
+                  row.appendChild(termCell);
+                  row.appendChild(popularityCell);
+                  tableBody.appendChild(row);
+        });
+
+        // 显示表格
+        table.style.display = 'table';
+      })
+      .catch(error => console.error('Error:', error));
+  }
+
+   function getPopularWord2() {
+        const city = document.getElementById('city2').value;
+        const limit = document.getElementById('limit2').value;
+
+        fetch(`/popular_words2?city=${city}&limit=${limit}`)
+          .then(response => response.json())
+          .then(data => {
+            const table = document.getElementById('wordTable');
+            const tableBody = table.querySelector('tbody');
+            tableBody.innerHTML = ''; // 清空表格内容
+
+            data.forEach(item => {
+              const row = document.createElement('tr');
+              const termCell = document.createElement('td');
+              termCell.textContent = item.term;
+              const popularityCell = document.createElement('td');
+              popularityCell.textContent = item.popularity;
+
+              row.appendChild(termCell);
+              row.appendChild(popularityCell);
+              tableBody.appendChild(row);
+            });
+
+            // 显示表格
+            table.style.display = 'table';
+          })
+          .catch(error => console.error('Error:', error));
+  }
+
+    function substituteWord() {
+    const originalWord = document.getElementById('originalWord').value;
+    const newWord = document.getElementById('newWord').value;
+
+    fetch('/substitute_words', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ word: originalWord, substitute: newWord }),
+    })
+      .then(response => response.json())
+      .then(data => {
+        const affectedReviewsElement = document.getElementById('affectedReviews');
+        affectedReviewsElement.textContent = `Affected Reviews: ${data.affected_reviews}`;
+        affectedReviewsElement.style.fontWeight = 'bold';
+        affectedReviewsElement.style.fontSize = 'xx-larger';
+      })
+      .catch(error => console.error('Error:', error));
+  }
+    </script>
+
+<style>
+    .Liu {
+        margin-left: 20px;
+    }
+
+    .picture1 {
+        margin-left: 35px;
+        margin-bottom: 20px;
+    }
+    .button2 {
+        background-color: dodgerblue;
+        color: white;
+        width: 90px;
+        height: 27px;
+        border: 0;
+        font-size: 16px;
+        border-radius: 30px;
+        margin-left: 15px;
+        margin-top: 5px;
+    }
+
+         uploadInput::-webkit-input-placeholder{
+             color: #986655;
+             font-size: 12px;
+         }
+    th, td {
+        border: 2px solid black;
+        padding: 8px;
+        width: 250px;
+    }
+
+    td:not(:last-child) {
+        padding-right: 20px;
+    }
+</style>
+</html>
+

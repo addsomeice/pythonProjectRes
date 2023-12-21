@@ -1,0 +1,326 @@
+<html>
+<head>
+    <title>Tutorial of Building a Simple Web Application</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.js"
+            integrity="sha256-eKhayi8LEQwp4NKxN+CfCh+3qOVUtJn3QNZ0TciWLP4="
+            crossorigin="anonymous"></script>
+</head>
+<div style="display: flex;">
+    <div style="flex: 1;min-width: 300px;">
+        <div class="Liu">
+            <h2>Liu shuaitong 76015</h2>
+        </div>
+        <div class="picture1">
+            <img src="/static/liushuaitong.jpg" width="200" height="200"/>
+        </div>
+        <div class="Liu">
+            <h2>Zhang sixuan 76019</h2>
+        </div>
+        <div class="picture1">
+            <img src="/static/zhangsixuan.jpg" width="200" height="200"/>
+        </div>
+        <div>
+            <button id="btn" class="button1">flush cache</button>
+        </div>
+    </div>
+    <div style="flex: 4;">
+        <div style="display: flex; margin-top: 20px;">
+            <span style="margin-right: 10px; margin-top: 7px;">Please enter data:</span>
+            <input id="city-name" placeholder="city-name" class="addInput"/>
+            <input id="page-size" placeholder="page-size" class="addInput" style="margin-left: 5px"/>
+            <input id="page" placeholder="page" class="addInput" style="margin-left: 5px"/>
+            <button id="btn-page" class="button2" onclick="distancework()">Search</button>
+        </div>
+
+        <div style="display: flex; margin-top: 20px;">
+            <span style="margin-right: 10px; margin-top: 7px;">Please enter data:</span>
+            <input id="class" placeholder="class" class="addInput"/>
+            <input id="knn" placeholder="knn" class="addInput" style="margin-left: 5px"/>
+            <input id="word" placeholder="word" class="addInput" style="margin-left: 5px"/>
+            <button id="btn-knn" class="button2" onclick="knnwork()">Search</button>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>Data Display</h3>
+            <span>The first search did not use Redis, it took a bit long, please be patient. </span>
+            <span>Enter the same data and search again, using Redis will be much faster. Especially for KNN, not using Redis may take more than ten minutes</span>
+            <hr>
+        </div>
+
+        <div id="result-container">
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    document.getElementById("btn").addEventListener("click", function () {
+        // 发送 GET 请求到后端路由
+        fetch("/purge_cache", {
+            method: 'GET'
+        })
+            .then(function (response) {
+                if (response.ok) {
+                    return response.text();
+                } else {
+                    throw new Error('Error: ' + response.status);
+                }
+            })
+            .then(function (data) {
+                // 清除缓存成功，显示弹窗
+                alert(data);
+            })
+            .catch(function (error) {
+                console.log('Error:', error);
+            });
+    });
+
+    function distancework() {
+        // 获取输入框的值
+        var cityName = document.getElementById("city-name").value;
+        var pageSize = document.getElementById("page-size").value;
+        var page = document.getElementById("page").value;
+
+        var resultContainer = document.getElementById("result-container");
+        resultContainer.innerHTML = "";
+
+        // 构建请求 URL
+        var url = `/stat/closest_cities?city=${cityName}&page=${page}&page_size=${pageSize}`;
+
+        // 记录开始时间
+        var startTime = performance.now();
+
+        // 发送 GET 请求
+        fetch(url, {
+            method: 'GET'
+        })
+            .then(function (response) {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Error: ' + response.status);
+                }
+            })
+            .then(function (data) {
+                // 计算响应时间
+                var responseTime = performance.now() - startTime;
+
+                // 清空结果容器
+                resultContainer.innerHTML = "";
+
+                // 创建响应时间元素
+                var timeElement = document.createElement("p");
+                timeElement.textContent = "Response Time: " + responseTime + "ms";
+
+                // 将响应时间元素添加到结果容器中
+                resultContainer.appendChild(timeElement);
+
+                // 判断是否存在 redis_key
+                var redisKeyElement = document.createElement("p");
+                if (data && data.redis_key === 1) {
+                    redisKeyElement.textContent = "Redis: true";
+                } else {
+                    redisKeyElement.textContent = "Redis: false";
+                }
+                resultContainer.appendChild(redisKeyElement);
+
+                // 展示列表数据
+                if (data && data.closest_cities.length > 0) {
+                    var closestCities = data.closest_cities;
+                    for (var i = 0; i < closestCities.length; i++) {
+                        var city = closestCities[i].city; // 获取城市名称
+                        var distance = closestCities[i].distance; // 获取距离
+
+                        // 创建列表项元素
+                        var listItem = document.createElement("li");
+                        listItem.textContent = "City: " + city + ", Distance: " + distance;
+
+                        // 将列表项添加到结果容器中
+                        resultContainer.appendChild(listItem);
+                    }
+                }
+            })
+    }
+
+    function knnwork() {
+        // 获取输入框的值
+        var classes = document.getElementById("class").value;
+        var k = document.getElementById("knn").value;
+        var words = document.getElementById("word").value;
+
+        // 记录开始时间
+        var startTime = performance.now();
+
+        // 获取结果容器元素
+        var resultContainer = document.getElementById("result-container");
+
+        // 清空结果容器
+        resultContainer.innerHTML = "";
+
+        // 构建请求 URL
+        var url = `/stat/knn_reviews?classes=${encodeURIComponent(classes)}&k=${encodeURIComponent(k)}&words=${encodeURIComponent(words)}`;
+
+        // 发送 GET 请求
+        fetch(url, {
+            method: 'GET'
+        })
+            .then(function (response) {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Error: ' + response.status);
+                }
+            })
+            .then(function (data) {
+                // 展示结果数据
+                if (data) {
+                    // 处理响应数据
+                    for (var i = 0; i < data.length; i++) {
+                        var data_work = data[i];
+
+                        // 创建结果项容器
+                        var resultItemContainer = document.createElement("div");
+                        resultItemContainer.classList.add("result-item");
+
+                        // 创建类别编号元素
+                        var classNumberElement = document.createElement("p");
+                        classNumberElement.textContent = "Class Number: " + data_work.class_number;
+                        resultItemContainer.appendChild(classNumberElement);
+
+                        // 创建中心城市元素
+                        var centerCityElement = document.createElement("p");
+                        centerCityElement.textContent = "Center City: " + data_work.center_city;
+                        resultItemContainer.appendChild(centerCityElement);
+
+                        // 创建城市列表元素
+                        var citiesElement = document.createElement("p");
+                        citiesElement.textContent = "Cities: ";
+
+                        // 创建城市列表中的每个城市元素
+                        for (var j = 0; j < data_work.cities.length; j++) {
+                            var cityElement = document.createElement("span");
+                            cityElement.textContent = data_work.cities[j];
+                            citiesElement.appendChild(cityElement);
+
+                            // 在城市之间添加逗号和空格
+                            if (j < data_work.cities.length - 1) {
+                                var commaElement = document.createElement("span");
+                                commaElement.textContent = ", ";
+                                citiesElement.appendChild(commaElement);
+                            }
+                        }
+
+                        resultItemContainer.appendChild(citiesElement);
+
+                        // 创建热门词元素
+                        var popularWordsElement = document.createElement("p");
+                        popularWordsElement.textContent = "Popular Words: " + data_work.popular_words.join(", ");
+                        resultItemContainer.appendChild(popularWordsElement);
+
+                        // 创建每千人平均评分元素
+                        var averageScoreElement = document.createElement("p");
+                        averageScoreElement.textContent = "Average Score per Thousand: " + data_work.average_score_per_thousand;
+                        resultItemContainer.appendChild(averageScoreElement);
+
+                        // 创建响应时间元素
+                        // var responseTimeElement = document.createElement("p");
+                        // responseTimeElement.textContent = "Response Time: " + result.response_time + " seconds";
+                        // resultItemContainer.appendChild(responseTimeElement);
+
+                        // 计算响应时间
+                        var responseTime = performance.now() - startTime;
+                        // 创建响应时间元素
+                        var timeElement = document.createElement("p");
+                        timeElement.textContent = "Response Time: " + responseTime + "ms";
+                        // 将响应时间元素添加到结果容器中
+                        resultItemContainer.appendChild(timeElement);
+
+                        // 判断是否存在 redis_key
+                        var redisKeyElement = document.createElement("p");
+                        if (data_work && data_work.redis_key === 1) {
+                            redisKeyElement.textContent = "Redis: true";
+                        } else {
+                            redisKeyElement.textContent = "Redis: false";
+                        }
+                        resultItemContainer.appendChild(redisKeyElement);
+
+                        // 将结果项容器添加到结果容器中
+                        resultContainer.appendChild(resultItemContainer);
+                    }
+                }
+            })
+            .catch(function (error) {
+                console.log('Error:', error);
+            });
+    }
+
+</script>
+<style>
+    .result-item {
+        margin-bottom: 10px;
+    }
+
+    .result-item p {
+        margin: 5px 0;
+    }
+
+    .Liu {
+        margin-left: 20px;
+    }
+
+    .picture1 {
+        margin-left: 35px;
+        margin-bottom: 20px;
+    }
+
+    .button1 {
+        background-color: dodgerblue;
+        color: white;
+        width: 200px;
+        height: 27px;
+        border: 0;
+        font-size: 16px;
+        border-radius: 30px;
+        margin-left: 35px;
+    }
+
+    .button2 {
+        background-color: dodgerblue;
+        color: white;
+        width: 90px;
+        height: 27px;
+        border: 0;
+        font-size: 16px;
+        border-radius: 30px;
+        margin-left: 15px;
+        margin-top: 5px;
+    }
+
+
+    uploadInput::-webkit-input-placeholder {
+        color: #986655;
+        font-size: 12px;
+    }
+
+    searchInput::-webkit-input-placeholder {
+        color: #986655;
+        font-size: 12px;
+    }
+
+    .table_css {
+        border-collapse: collapse;
+        margin-top: 10px;
+        display: inline-block;
+        width: 100%;
+    }
+
+    th, td {
+        padding: 8px;
+        width: 250px;
+    }
+
+    td:not(:last-child) {
+        padding-right: 20px;
+    }
+</style>
+</html>
+
